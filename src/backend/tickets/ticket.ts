@@ -1,34 +1,25 @@
-import { TicketType } from "./ticket.type";
+import { DefaultType, DetailEnum, TicketType } from "./ticket.type";
 
-export class Ticket {
+export class Ticket<T extends DefaultType> implements TicketType<T> {
   account_name: string | null;
   requester_email: string | null;
-  subject: string | null;
-  detailing: string | null;
+  subject: DetailEnum;
+  module_ticket: T;
 
-  constructor(ticketData: TicketType) {
-    this.validateTicketData(ticketData);
-
+  constructor(ticketData: TicketType<T>) {
+    this.validateData(ticketData);
     this.account_name = ticketData.account_name;
     this.requester_email = ticketData.requester_email;
     this.subject = ticketData.subject;
-    this.detailing = ticketData.detailing;
+    this.module_ticket = ticketData.module_ticket;
   }
 
-  private validateTicketData(ticketData: TicketType): void {
-    const { account_name, requester_email, subject, detailing } = ticketData;
+  validateData(ticketData: TicketType<T>): void {
+    const { account_name, requester_email, subject, module_ticket } =
+      ticketData;
 
-    if (!account_name || !requester_email || !subject || !detailing) {
+    if (!account_name || !requester_email || !subject || !module_ticket) {
       throw new Error("All fields must be provided.");
     }
-  }
-
-  getData(): TicketType {
-    return {
-      account_name: this.account_name,
-      requester_email: this.requester_email,
-      subject: this.subject,
-      detailing: this.detailing,
-    };
   }
 }
