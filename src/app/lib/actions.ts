@@ -1,34 +1,35 @@
 "use server";
 
 import { ZendeskService } from "@/backend/service/zendesk";
-import { Ticket } from "@/backend/tickets/ticket";
-import { TicketType } from "@/backend/tickets/ticket.type";
+import { TicketManager } from "@/backend/tickets/ticket-manager";
+import { formDataToObject } from "../utils/parse-utils";
+import { saveFileLocally } from "@/backend/utils/file-utils";
 
 const zendeskService = new ZendeskService();
+const ticketManager = new TicketManager();
 
-export async function createTicket(formData: any): Promise<any> {
+export async function createTicket(formData: FormData): Promise<any> {
   try {
-    const ticketData: TicketType = {
-      account_name: formData.account_name,
-      requester_email: formData.requester_email,
-      subject: formData.subject,
-      detailing: formData.detailing,
-    };
+    const ticketData = formDataToObject(formData);
+    let ticket = ticketManager.createTicket(ticketData);
 
-    let ticket = new Ticket(ticketData);
+    const fileField = formData.get("module_ticket.print_of_the_page") as File;
+
+    if (fileField && fileField instanceof File) {
+      const filePath = await saveFileLocally(fileField).then((it) => {
+        return it;
+      });
+
+      ticketData.module_ticket.print_of_the_page = filePath;
+    }
 
     const result = await zendeskService.newTicket(ticket);
-
-    console.log(result.status.toString());
-
     if (result.status.toString().startsWith("2")) {
       return { status: true, message: "Ticket created successfully" };
     } else {
       return { status: false, message: "Sorry, Ticket could not be created" };
     }
-    return;
   } catch (error) {
-    console.log("Error creating ticket:", error);
-    throw new Error("Something unexpected happened while");
+    throw new Error("Something unexpected happened while creating the ticket");
   }
 }
